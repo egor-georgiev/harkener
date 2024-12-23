@@ -12,7 +12,12 @@ RUN apk add \
     musl-dev \
     libpcap-dev
 
-COPY go.sum go.mod main.go ./
+COPY go.mod go.sum ./
+RUN go mod download -x
+
+COPY main.go .
+COPY internal internal
+
 RUN go build
 
 FROM scratch AS final
