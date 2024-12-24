@@ -3,7 +3,6 @@ FROM golang:1.23.3-alpine AS builder
 ARG GOOS=linux
 ARG GOARCH=amd64
 ARG CGO_ENABLED=1
-ARG GOFLAGS="-ldflags=-extldflags=-static -a -v"
 
 WORKDIR /code
 
@@ -16,9 +15,10 @@ COPY go.mod go.sum ./
 RUN go mod download -x
 
 COPY main.go .
+COPY cmd cmd
 COPY internal internal
-
 RUN go build
+RUN go build -o listener -tags netgo,osusergo -ldflags '-extldflags "-static" -w -s' .
 
 FROM scratch AS final
 

@@ -13,7 +13,7 @@ const snaplen = 1600
 
 var interfaceName = flag.String("i", "eth0", "interface to listen on")
 
-func listen(ifName string, output chan layers.TCPPort) {
+func Listen(ifName string, ignorePorts map[layers.TCPPort]struct{}, output chan layers.TCPPort) {
 	handle, err := pcap.OpenLive(ifName, snaplen, true, pcap.BlockForever)
 	if err != nil {
 		log.Fatal(err)
@@ -32,18 +32,13 @@ func listen(ifName string, output chan layers.TCPPort) {
 			continue
 		}
 
-		if tcp.SYN && !tcp.ACK {
+                if _, exists := ignorePorts[tcp.DstPort]; exists{
+                        continue
+                }
+
+                if tcp.SYN && !tcp.ACK {
 			output <- tcp.DstPort
 		}
 	}
 }
 
-func Run() {
-	flag.Parse()
-	portInfo := make(chan layers.TCPPort)
-	go listen(*interfaceName, portInfo)
-	for {
-		port := <-portInfo
-		log.Printf("%d", port)
-	}
-}

@@ -1,7 +1,7 @@
 package main
 
-import "listener/internal"
+import "listener/cmd"
 
 func main() {
-	internal.Run()
+	cmd.Execute()
 }
