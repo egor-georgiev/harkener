@@ -1,9 +1,13 @@
-# Listener
+# Hark
+
+## tl;dr
+```bash
+cp .env.template .env
+source .env
+make deploy
+```
 
 ## TODO:
-- [ ] MVP:
-  - [x] listen to SYN packets
-  - [x] filter ports based on cmdline args
-  - [ ] serve ports via UDP
+- [ ] UDP Server
 - [ ] consider a refactor
 

@@ -18,10 +18,10 @@ COPY main.go .
 COPY cmd cmd
 COPY internal internal
 RUN go build
-RUN go build -o listener -tags netgo,osusergo -ldflags '-extldflags "-static" -w -s' .
+RUN go build -o harkener -tags netgo,osusergo -ldflags '-extldflags "-static" -w -s' .
 
 FROM scratch AS final
 
-COPY --from=builder /code/listener .
-ENTRYPOINT ["/listener"]
+COPY --from=builder /code/harkener .
+ENTRYPOINT ["/harkener"]
 

@@ -5,11 +5,11 @@ help: ## This help.
 
 .PHONY: check-env
 check-env:
-ifndef LISTENER_DEPLOY_HOST
-	$(error LISTENER_DEPLOY_HOST is undefined)
+ifndef HARKENER_DEPLOY_HOST
+	$(error HARKENER_DEPLOY_HOST is undefined)
 endif
-ifndef LISTENER_DEPLOY_PATH
-	$(error LISTENER_DEPLOY_PATH is undefined)
+ifndef HARKENER_DEPLOY_PATH
+	$(error HARKENER_DEPLOY_PATH is undefined)
 endif
 
 .PHONY: build
@@ -18,7 +18,7 @@ build: ## build the binary
 
 .PHONY: deploy
 deploy: check-env build ## build the binary and deploy to the server
-	@scp listener $(LISTENER_DEPLOY_HOST):$(LISTENER_DEPLOY_PATH)
+	@scp harkener $(HARKENER_DEPLOY_HOST):$(HARKENER_DEPLOY_PATH)
 
 .PHONY: fmt
 fmt: ## reformat

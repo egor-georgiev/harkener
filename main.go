@@ -1,6 +1,6 @@
 package main
 
-import "listener/cmd"
+import "harkener/cmd"
 
 func main() {
 	cmd.Execute()
