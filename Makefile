@@ -17,6 +17,10 @@ build: ## build the binary
 	@docker build --output=. . $(args)
 
 .PHONY: deploy
-deploy: check-env build ## build the binary deploy to the server
+deploy: check-env build ## build the binary and deploy to the server
 	@scp listener $(LISTENER_DEPLOY_HOST):$(LISTENER_DEPLOY_PATH)
+
+.PHONY: fmt
+fmt: ## reformat
+	@go fmt ./...
 

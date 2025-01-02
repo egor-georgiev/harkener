@@ -32,13 +32,12 @@ func Listen(ifName string, ignorePorts map[layers.TCPPort]struct{}, output chan 
 			continue
 		}
 
-                if _, exists := ignorePorts[tcp.DstPort]; exists{
-                        continue
-                }
+		if _, exists := ignorePorts[tcp.DstPort]; exists {
+			continue
+		}
 
-                if tcp.SYN && !tcp.ACK {
+		if tcp.SYN && !tcp.ACK {
 			output <- tcp.DstPort
 		}
 	}
 }
-
