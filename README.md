@@ -8,6 +8,7 @@ make deploy
 ```
 
 ## TODO:
+- [x] refactor
 - [ ] UDP Server
 - [ ] consider a refactor
 

@@ -1,7 +1,6 @@
-package internal
+package capture
 
 import (
-	"flag"
 	"log"
 
 	"github.com/google/gopacket"
@@ -11,10 +10,8 @@ import (
 
 const snaplen = 1600
 
-var interfaceName = flag.String("i", "eth0", "interface to listen on")
-
-func Listen(ifName string, ignorePorts map[layers.TCPPort]struct{}, output chan layers.TCPPort) {
-	handle, err := pcap.OpenLive(ifName, snaplen, true, pcap.BlockForever)
+func Capture(interfaceName string, ignorePorts map[layers.TCPPort]struct{}, output chan layers.TCPPort) {
+	handle, err := pcap.OpenLive(interfaceName, snaplen, true, pcap.BlockForever)
 	if err != nil {
 		log.Fatal(err)
 	}
