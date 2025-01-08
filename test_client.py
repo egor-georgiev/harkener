@@ -23,7 +23,7 @@ def parse_args() -> tuple[str, int]:
     return host, port
 
 
-def main():
+def main() -> None:
     client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     addr = parse_args()
     message = b"hi"
