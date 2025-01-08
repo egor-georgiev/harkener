@@ -2,8 +2,7 @@
 
 ## tl;dr
 ```bash
-cp .env.template .env
-source .env
-make deploy
+make build
+./harkener --help
 ```
 

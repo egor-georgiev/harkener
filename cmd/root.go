@@ -64,8 +64,8 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&interfaceName, "interface", "", "interface to listen on")
-	rootCmd.PersistentFlags().StringVar(&bindAddr, "bind", "", "address to bind to")
+	rootCmd.PersistentFlags().StringVar(&interfaceName, "interface", "", "network interface to capture TCP SYN packets from")
+	rootCmd.PersistentFlags().StringVar(&bindAddr, "bind", "", "local host:port for the udp server to bind to")
 	rootCmd.PersistentFlags().IntSliceVar(&ignorePorts, "ignore", []int{}, "ports to ignore")
 	rootCmd.MarkPersistentFlagRequired("interface")
 	rootCmd.MarkPersistentFlagRequired("bind")
