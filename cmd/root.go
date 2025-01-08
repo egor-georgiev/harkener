@@ -31,7 +31,7 @@ var rootCmd = &cobra.Command{
 			ignoreTCPPorts[layers.TCPPort(castedPort)] = struct{}{}
 		}
 
-		shutdownSignals := make(chan os.Signal)
+		shutdownSignals := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignals, syscall.SIGINT, syscall.SIGTERM)
 
 		portInfo := make(chan layers.TCPPort)
