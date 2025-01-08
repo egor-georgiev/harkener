@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 		shutdownSignals := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignals, syscall.SIGINT, syscall.SIGTERM)
 
-		portInfo := make(chan layers.TCPPort)
+		portInfo := make(chan uint16)
 
 		state, cancel := internal.NewStateWithCancel()
 

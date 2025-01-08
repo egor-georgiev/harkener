@@ -4,6 +4,7 @@ go 1.23.3
 
 require (
 	github.com/google/gopacket v1.1.19
+	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/cobra v1.8.1
 )
 

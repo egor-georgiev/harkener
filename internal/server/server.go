@@ -1,106 +1,120 @@
 package server
 
 import (
+	"context"
 	"encoding/binary"
-	"fmt"
 	"harkener/internal"
 	"log"
-	"net"
+	"net/http"
 	"sync"
 	"time"
 
-	"github.com/google/gopacket/layers"
+	"github.com/gorilla/websocket"
 )
 
 const (
-	serverBufferSize         = 1024
-	consecutiveErrsThreshold = 100
-	writeTimeout             = time.Second * 1
-	portBufferSize           = 2
+	endpoint       = "/ws"
+	sendBufferSize = 2
+	writeTimeout   = time.Second * 5
 )
 
-type clientInfo struct {
-	Lock sync.Mutex
-	Info map[*net.UDPAddr]struct{}
+var upgrader = websocket.Upgrader{}
+
+type hub struct {
+	ctx    context.Context
+	spokes map[*spoke]context.CancelFunc
+	lock   sync.RWMutex
 }
 
-func newClientInfo() *clientInfo {
-	return &clientInfo{
-		Info: make(map[*net.UDPAddr]struct{}),
+type spoke struct {
+	ctx    context.Context
+	conn  *websocket.Conn
+	input chan uint16
+}
+
+func (h *hub) run(input chan uint16) {
+	for{
+		// select{
+		// case:
+		// case:
+		// }
 	}
 }
 
-func acceptConnections(info *clientInfo, state *internal.State, conn *net.UDPConn) {
+func newHub() (*hub, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &hub{
+		ctx:    ctx,
+		spokes: make(map[*spoke]struct{}),
+	}, cancel
+}
 
-	var buf [serverBufferSize]byte
-	var consecutiveErrsCount int
+func (h *hub) openSpoke(conn *websocket.Conn) *spoke {
+	spoke := &spoke{
+		conn:  conn,
+		input: make(chan uint16),
+	}
+	h.lock.Lock()
+	h.spokes[spoke] = struct{}{}
+	h.lock.Unlock()
+
+	return spoke
+}
+
+
+func (h *hub) closeSpoke(s *spoke) {
+	close(s.input)
+	s.conn.Close()
+
+	h.lock.Lock()
+	delete(h.spokes, s)
+	h.lock.Unlock()
+}
+
+
+
+func (h *hub) close(){
+	h.lock.Lock()
+	for spoke := range h.spokes{
+		close(s.input)
+		s.conn.Close()
+	}
+}
+
+// TODO: think about necessity of logging connection errors
+func handler(h *hub, w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	spoke := h.openSpoke(conn)
+	defer h.closeSpoke(spoke)
+
+	buf := make([]byte, sendBufferSize)
 	for {
 		select {
-		case <-state.Ctx.Done():
+		case <-spoke.ctx.Done():
 			return
-		default:
-			if consecutiveErrsCount >= consecutiveErrsThreshold {
-				state.Errors <- fmt.Errorf("consecutive errors threshold reached: %v", consecutiveErrsThreshold)
+		case message := <-spoke.input:
+			binary.BigEndian.PutUint16(buf, message)
+			conn.SetWriteDeadline(time.Now().Add(writeTimeout))
+			err := conn.WriteMessage(websocket.BinaryMessage, buf)
+			if err != nil {
 				return
 			}
-
-			_, addr, err := conn.ReadFromUDP(buf[0:])
-			if err != nil {
-				log.Printf("got error while reading from %v: %v\n", addr, err)
-				consecutiveErrsCount++
-				continue
-			}
-			consecutiveErrsCount = 0
-
-			info.Lock.Lock()
-			info.Info[addr] = struct{}{}
-			info.Lock.Unlock()
-
 		}
 	}
 
 }
 
-func writeToConnections(portInfo chan layers.TCPPort, clientInfo *clientInfo, state *internal.State, conn *net.UDPConn) {
-	buf := make([]byte, portBufferSize)
-	for port := range portInfo {
-		select {
-		case <-state.Ctx.Done():
-			return
-		default:
-			clientInfo.Lock.Lock()
-			for addr := range clientInfo.Info {
-				conn.SetWriteDeadline(time.Now().Add(writeTimeout))
-				binary.BigEndian.PutUint16(buf, uint16(port))
-				_, err := conn.WriteToUDP(buf, addr)
-				// TODO: improved error handling and logging
-				if err != nil {
-					delete(clientInfo.Info, addr)
-				}
-			}
-			clientInfo.Lock.Unlock()
-		}
-	}
-}
-
-func Serve(portInfo chan layers.TCPPort, bindAddress string, state *internal.State) {
-	udpAddr, err := net.ResolveUDPAddr("udp", bindAddress)
-	if err != nil {
-		state.Errors <- fmt.Errorf("failed while binding to address %v: %v", udpAddr, err)
-		return
-	}
-
-	conn, err := net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		state.Errors <- fmt.Errorf("failed while creating a connection: %v\n", err)
-		return
-	}
-	defer conn.Close()
-
-	clientInfo := newClientInfo()
-
-	go acceptConnections(clientInfo, state, conn)
-	go writeToConnections(portInfo, clientInfo, state, conn)
-
-	<-state.Ctx.Done()
+func Serve(portInfo chan uint16, bindAddr string, mainState *internal.State) {
+	hub, cancel := newHub()
+	go hub.run()
+	http.HandleFunc(
+		endpoint,
+		func(w http.ResponseWriter, r *http.Request) {
+			handler(hub, w, r)
+		},
+	)
+	<-
 }
