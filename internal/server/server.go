@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"harkener/internal"
 	"log"
 	"net/http"
@@ -13,108 +14,135 @@ import (
 )
 
 const (
-	endpoint       = "/ws"
-	sendBufferSize = 2
-	writeTimeout   = time.Second * 5
+	endpoint              = "/ws"
+	sendBufferSize        = 2
+	writeTimeout          = time.Second * 5
+	serverShutdownTimeout = time.Second * 5
 )
 
 var upgrader = websocket.Upgrader{}
 
 type hub struct {
-	ctx    context.Context
-	spokes map[*spoke]context.CancelFunc
+	spokes map[*spoke]struct{}
 	lock   sync.RWMutex
 }
 
 type spoke struct {
-	ctx    context.Context
-	conn  *websocket.Conn
+	name  string
 	input chan uint16
 }
 
-func (h *hub) run(input chan uint16) {
-	for{
-		// select{
-		// case:
-		// case:
-		// }
+func newHub() *hub {
+	return &hub{
+		spokes: make(map[*spoke]struct{}),
 	}
 }
 
-func newHub() (*hub, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-	return &hub{
-		ctx:    ctx,
-		spokes: make(map[*spoke]struct{}),
-	}, cancel
+func (h *hub) run(input chan uint16) {
+	defer h.close()
+	for {
+		msg, ok := <-input
+		if ok {
+			h.lock.RLock()
+			for s := range h.spokes {
+				select {
+				case s.input <- msg:
+				default:
+					log.Printf("dropping packet for spoke %v\n", s.name)
+				}
+			}
+			h.lock.RUnlock()
+		} else {
+			log.Printf("input channel is closed, closing the hub\n")
+			return
+		}
+	}
 }
 
-func (h *hub) openSpoke(conn *websocket.Conn) *spoke {
-	spoke := &spoke{
-		conn:  conn,
+func (h *hub) openSpoke(name string) *spoke {
+	s := &spoke{
+		name:  name,
 		input: make(chan uint16),
 	}
 	h.lock.Lock()
-	h.spokes[spoke] = struct{}{}
+	h.spokes[s] = struct{}{}
 	h.lock.Unlock()
 
-	return spoke
+	return s
 }
-
 
 func (h *hub) closeSpoke(s *spoke) {
 	close(s.input)
-	s.conn.Close()
 
 	h.lock.Lock()
 	delete(h.spokes, s)
 	h.lock.Unlock()
 }
 
-
-
-func (h *hub) close(){
+func (h *hub) close() {
 	h.lock.Lock()
-	for spoke := range h.spokes{
+	for s := range h.spokes {
 		close(s.input)
-		s.conn.Close()
+		delete(h.spokes, s)
 	}
 }
 
-// TODO: think about necessity of logging connection errors
 func handler(h *hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		log.Printf("failed while upgrading the connection for %v: %v\n", addr, err)
 		return
 	}
-	spoke := h.openSpoke(conn)
-	defer h.closeSpoke(spoke)
+	defer conn.Close()
 
+	addr := conn.RemoteAddr().String()
+	spoke := h.openSpoke(addr)
+	defer h.closeSpoke(spoke)
 	buf := make([]byte, sendBufferSize)
 	for {
-		select {
-		case <-spoke.ctx.Done():
-			return
-		case message := <-spoke.input:
+		message, ok := <-spoke.input
+		if ok {
 			binary.BigEndian.PutUint16(buf, message)
 			conn.SetWriteDeadline(time.Now().Add(writeTimeout))
 			err := conn.WriteMessage(websocket.BinaryMessage, buf)
 			if err != nil {
+				log.Printf("failed while writing to %v: %v\n", addr, err)
 				return
 			}
+		} else {
+			log.Printf("input channel is closed, stopping the handler for %v\n", addr)
+			return
 		}
 	}
-
 }
 
-func Serve(portInfo chan uint16, bindAddr string, mainState *internal.State) {
-	hub, cancel := newHub()
-	go hub.run()
+func Serve(portInfo chan uint16, bindAddr string, state *internal.State) {
+	server := &http.Server{Addr: bindAddr, Handler: nil}
+	hub := newHub()
+	go hub.run(portInfo)
+
 	http.HandleFunc(
 		endpoint,
 		func(w http.ResponseWriter, r *http.Request) {
 			handler(hub, w, r)
 		},
 	)
-	<-
+
+	log.Printf("starting the server on %v%v", bindAddr, endpoint)
+	go func() {
+		err := server.ListenAndServe() // always non-nil
+		if err != http.ErrServerClosed {
+			state.Errors <- fmt.Errorf("got error from ws server: %v", err)
+		}
+	}()
+
+	<-state.Ctx.Done()
+	log.Printf("shutting down the server\n")
+	hub.close()
+	shutdownContext, cancel := context.WithTimeout(context.Background(), serverShutdownTimeout)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownContext); err != nil {
+		log.Printf("got error during the server shutdown: %v\n", err)
+	}
 }
