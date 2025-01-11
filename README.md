@@ -1,5 +1,5 @@
 # Harkener: The Internet Sonification Project
-**tl;dr: [try it out](https://nouuid4u.com/harkener/)**
+**[try it out](https://nouuid4u.com/harkener/)**
 
 ## What It Does:
 - Monitors TCP SYN packets that may indicate port scans on an internet-exposed server
