@@ -10,7 +10,7 @@ import (
 
 const snaplen = 1600
 
-func Capture(interfaceName string, ignorePorts map[layers.TCPPort]struct{}, output chan layers.TCPPort, state *internal.State) {
+func Capture(interfaceName string, ignorePorts map[layers.TCPPort]struct{}, output chan uint16, state *internal.State) {
 	handle, err := pcap.OpenLive(interfaceName, snaplen, true, pcap.BlockForever)
 	if err != nil {
 		state.Errors <- err
@@ -39,7 +39,7 @@ func Capture(interfaceName string, ignorePorts map[layers.TCPPort]struct{}, outp
 			}
 
 			if tcp.SYN && !tcp.ACK {
-				output <- tcp.DstPort
+				output <- uint16(tcp.DstPort)
 			}
 
 		}
