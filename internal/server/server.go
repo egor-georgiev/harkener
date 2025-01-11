@@ -20,7 +20,12 @@ const (
 	serverShutdownTimeout = time.Second * 5
 )
 
-var upgrader = websocket.Upgrader{}
+// TODO: parametrize
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 type hub struct {
 	spokes map[*spoke]struct{}
@@ -117,7 +122,7 @@ func handler(h *hub, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Serve(portInfo chan uint16, bindAddr string, state *internal.State) {
+func Serve(portInfo chan uint16, bindAddr string, state *internal.State, tlsCertPath, tlsKeyPath string) {
 	server := &http.Server{Addr: bindAddr, Handler: nil}
 	hub := newHub()
 	go hub.run(portInfo)
@@ -129,13 +134,25 @@ func Serve(portInfo chan uint16, bindAddr string, state *internal.State) {
 		},
 	)
 
-	log.Printf("starting the server on %v%v", bindAddr, endpoint)
-	go func() {
-		err := server.ListenAndServe() // always non-nil
-		if err != http.ErrServerClosed {
-			state.Errors <- fmt.Errorf("got error from ws server: %v", err)
-		}
-	}()
+	if tlsCertPath != "" && tlsKeyPath != "" {
+		log.Printf("starting the server on wss://%v%v", bindAddr, endpoint)
+		go func() {
+			err := server.ListenAndServeTLS(tlsCertPath, tlsKeyPath) // always non-nil
+			if err != http.ErrServerClosed {
+				state.Errors <- fmt.Errorf("got error from ws server: %v", err)
+			}
+		}()
+	} else if tlsCertPath == "" && tlsKeyPath == "" {
+		log.Printf("starting the server on ws://%v%v", bindAddr, endpoint)
+		go func() {
+			err := server.ListenAndServe() // always non-nil
+			if err != http.ErrServerClosed {
+				state.Errors <- fmt.Errorf("got error from ws server: %v", err)
+			}
+		}()
+	} else {
+		state.Errors <- fmt.Errorf("got tls cert path: %v and tls key path: %v, but both must be either present or absent", tlsCertPath, tlsKeyPath)
+	}
 
 	// at the same time, portInfo will be closed and hub.run() will exit
 	<-state.Ctx.Done()

@@ -17,6 +17,8 @@ import (
 var interfaceName string
 var bindAddr string
 var ignorePorts []int
+var tlsCertPath string
+var tlsKeyPath string
 
 var rootCmd = &cobra.Command{
 	Use:   "harkener",
@@ -30,6 +32,21 @@ var rootCmd = &cobra.Command{
 			}
 			ignoreTCPPorts[layers.TCPPort(castedPort)] = struct{}{}
 		}
+		tlsCertSet := tlsCertPath != ""
+		tlsKeySet := tlsKeyPath != ""
+		if tlsCertSet != tlsKeySet {
+			log.Fatalf("either both tls-cert-path and tls-key-path must be speicifed or none")
+		}
+		if tlsKeySet && tlsCertSet {
+			ok, err := utils.ValidateFilePath(tlsKeyPath)
+			if !ok {
+				log.Fatalf("invalid tls-key-path value: %v", err)
+			}
+			ok, err = utils.ValidateFilePath(tlsCertPath)
+			if !ok {
+				log.Fatalf("invalid tls-cert-path value: %v", err)
+			}
+		}
 
 		shutdownSignals := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignals, syscall.SIGINT, syscall.SIGTERM)
@@ -39,7 +56,7 @@ var rootCmd = &cobra.Command{
 		state, cancel := internal.NewStateWithCancel()
 
 		go capture.Capture(interfaceName, ignoreTCPPorts, portInfo, state)
-		go server.Serve(portInfo, bindAddr, state)
+		go server.Serve(portInfo, bindAddr, state, tlsCertPath, tlsKeyPath)
 
 		select {
 		case sig := <-shutdownSignals:
@@ -69,4 +86,6 @@ func init() {
 	rootCmd.PersistentFlags().IntSliceVar(&ignorePorts, "ignore", []int{}, "ports to ignore")
 	rootCmd.MarkPersistentFlagRequired("interface")
 	rootCmd.MarkPersistentFlagRequired("bind")
+	rootCmd.PersistentFlags().StringVar(&tlsCertPath, "tls-cert-path", "", "path to a TLS certificate")
+	rootCmd.PersistentFlags().StringVar(&tlsKeyPath, "tls-key-path", "", "path to a TLS key")
 }
