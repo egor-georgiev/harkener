@@ -2,5 +2,5 @@ harkener
 .git/
 .env
 .env.template
-test_client.py
+client/
 
