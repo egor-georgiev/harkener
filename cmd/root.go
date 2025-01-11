@@ -35,16 +35,16 @@ var rootCmd = &cobra.Command{
 		tlsCertSet := tlsCertPath != ""
 		tlsKeySet := tlsKeyPath != ""
 		if tlsCertSet != tlsKeySet {
-			log.Fatalf("either both tls-cert-path and tls-key-path must be speicifed or none")
+			log.Fatalf("either both tls-cert-path and tls-key-path must be speicifed or none\n")
 		}
 		if tlsKeySet && tlsCertSet {
 			ok, err := utils.ValidateFilePath(tlsKeyPath)
 			if !ok {
-				log.Fatalf("invalid tls-key-path value: %v", err)
+				log.Fatalf("invalid tls-key-path value: %v\n", err)
 			}
 			ok, err = utils.ValidateFilePath(tlsCertPath)
 			if !ok {
-				log.Fatalf("invalid tls-cert-path value: %v", err)
+				log.Fatalf("invalid tls-cert-path value: %v\n", err)
 			}
 		}
 

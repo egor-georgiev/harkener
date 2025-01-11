@@ -135,7 +135,7 @@ func Serve(portInfo chan uint16, bindAddr string, state *internal.State, tlsCert
 	)
 
 	if tlsCertPath != "" && tlsKeyPath != "" {
-		log.Printf("starting the server on wss://%v%v", bindAddr, endpoint)
+		log.Printf("starting the server on wss://%v%v\n", bindAddr, endpoint)
 		go func() {
 			err := server.ListenAndServeTLS(tlsCertPath, tlsKeyPath) // always non-nil
 			if err != http.ErrServerClosed {
@@ -143,7 +143,7 @@ func Serve(portInfo chan uint16, bindAddr string, state *internal.State, tlsCert
 			}
 		}()
 	} else if tlsCertPath == "" && tlsKeyPath == "" {
-		log.Printf("starting the server on ws://%v%v", bindAddr, endpoint)
+		log.Printf("starting the server on ws://%v%v\n", bindAddr, endpoint)
 		go func() {
 			err := server.ListenAndServe() // always non-nil
 			if err != http.ErrServerClosed {
