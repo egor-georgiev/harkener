@@ -90,12 +90,13 @@ func (h *hub) close() {
 func handler(h *hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("failed while upgrading the connection for %v: %v\n", addr, err)
+		log.Printf("failed while upgrading the connection: %v\n", err)
 		return
 	}
 	defer conn.Close()
-
 	addr := conn.RemoteAddr().String()
+	log.Printf("opened a connection for %v\n", addr)
+
 	spoke := h.openSpoke(addr)
 	defer h.closeSpoke(spoke)
 	buf := make([]byte, sendBufferSize)
@@ -136,9 +137,9 @@ func Serve(portInfo chan uint16, bindAddr string, state *internal.State) {
 		}
 	}()
 
+	// at the same time, portInfo will be closed and hub.run() will exit
 	<-state.Ctx.Done()
 	log.Printf("shutting down the server\n")
-	hub.close()
 	shutdownContext, cancel := context.WithTimeout(context.Background(), serverShutdownTimeout)
 	defer cancel()
 
