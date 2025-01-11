@@ -22,7 +22,7 @@ var tlsKeyPath string
 
 var rootCmd = &cobra.Command{
 	Use:   "harkener",
-	Short: "listens to incoming TCP SYN packets, filters and serves them via UDP",
+	Short: "listens to incoming TCP SYN packets, filters and serves them via a websocket server",
 	Run: func(cmd *cobra.Command, args []string) {
 		ignoreTCPPorts := make(map[layers.TCPPort]struct{})
 		for _, port := range ignorePorts {
@@ -82,7 +82,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&interfaceName, "interface", "", "network interface to capture TCP SYN packets from")
-	rootCmd.PersistentFlags().StringVar(&bindAddr, "bind", "", "local host:port for the udp server to bind to")
+	rootCmd.PersistentFlags().StringVar(&bindAddr, "bind", "", "local host:port for the websocket server to bind to")
 	rootCmd.PersistentFlags().IntSliceVar(&ignorePorts, "ignore", []int{}, "ports to ignore")
 	rootCmd.MarkPersistentFlagRequired("interface")
 	rootCmd.MarkPersistentFlagRequired("bind")
