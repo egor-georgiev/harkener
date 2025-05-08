@@ -1,21 +1,18 @@
-# Harkener: The Internet Sonification Project
-**[try it out](https://nouuid4u.com/harkener/)**
+# Harkener
+Harkener transforms the 'noise' of the internet — unseen connection attempts from port scanners, web crawlers, and other probes — into sound.
+You can try it out via the **[link](https://nouuid4u.com/harkener/)**.
 
-## What It Does:
-- Monitors TCP SYN packets that may indicate port scans on an internet-exposed server
-- Gathers data on destination ports
-- Transforms the collected data into sound
+## What it Does Technically:
+- listens for TCP SYN packets
+- gathers data on the source IP address and the destination port number
+- transforms the collected data into sound, using the destination port number to modulate the frequency
 
-## TO-DO (what I plan to do myself):
-- [ ] client:
-    - [ ] rework sound synthesis and refactor
-    - [ ] consider visualization
-    - [ ] add a clear "about" section
-- [ ] server:
-    - [ ] simplify the websocket part (drop the hub design and register connections directly with capture)
-    - [ ] add metrics:
-        - [ ] collect data about packet distribution (and serve it to the client?)
-        - [ ] count active clients/session time
-        - [ ] count goroutines/channels/memory usage/learn about profiling
-    - [ ] improve logging
-
+## TODO:
+- [ ] drop TLS support
+- [ ] switch to pflag
+- [ ] switch to SSE
+- [ ] add metrics
+- [ ] serve the source IP as well as destination port
+- [ ] sonification improvements:
+  - [ ] dev-version with bells and whistles for tuning
+- [ ] hilbert curve visualization
