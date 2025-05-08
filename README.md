@@ -9,10 +9,15 @@ You can try it out via the **[link](https://nouuid4u.com/harkener/)**.
 
 ## TODO:
 - [x] drop TLS support
-- [ ] switch to pflag
 - [ ] switch to SSE
+  - handle re-connects on the client side
 - [ ] add metrics
 - [ ] serve the source IP as well as destination port
 - [ ] sonification improvements:
-  - [ ] dev-version with bells and whistles for tuning
+  - [ ] dev-version with bells and whistles for tuning:
+    - min, max freq
+    - envelope
+    - gain
+    - volume
 - [ ] hilbert curve visualization
+- [ ] drop cobra for pflag
