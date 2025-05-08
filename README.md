@@ -8,7 +8,7 @@ You can try it out via the **[link](https://nouuid4u.com/harkener/)**.
 - transforms the collected data into sound, using the destination port number to modulate the frequency
 
 ## TODO:
-- [ ] drop TLS support
+- [x] drop TLS support
 - [ ] switch to pflag
 - [ ] switch to SSE
 - [ ] add metrics

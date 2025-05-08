@@ -122,7 +122,7 @@ func handler(h *hub, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Serve(portInfo chan uint16, bindAddr string, state *internal.State, tlsCertPath, tlsKeyPath string) {
+func Serve(portInfo chan uint16, bindAddr string, state *internal.State) {
 	server := &http.Server{Addr: bindAddr, Handler: nil}
 	hub := newHub()
 	go hub.run(portInfo)
@@ -134,25 +134,13 @@ func Serve(portInfo chan uint16, bindAddr string, state *internal.State, tlsCert
 		},
 	)
 
-	if tlsCertPath != "" && tlsKeyPath != "" {
-		log.Printf("starting the server on wss://%v%v\n", bindAddr, endpoint)
-		go func() {
-			err := server.ListenAndServeTLS(tlsCertPath, tlsKeyPath) // always non-nil
-			if err != http.ErrServerClosed {
-				state.Errors <- fmt.Errorf("got error from ws server: %v", err)
-			}
-		}()
-	} else if tlsCertPath == "" && tlsKeyPath == "" {
-		log.Printf("starting the server on ws://%v%v\n", bindAddr, endpoint)
-		go func() {
-			err := server.ListenAndServe() // always non-nil
-			if err != http.ErrServerClosed {
-				state.Errors <- fmt.Errorf("got error from ws server: %v", err)
-			}
-		}()
-	} else {
-		state.Errors <- fmt.Errorf("got tls cert path: %v and tls key path: %v, but both must be either present or absent", tlsCertPath, tlsKeyPath)
-	}
+	log.Printf("starting the server on ws://%v%v\n", bindAddr, endpoint)
+	go func() {
+		err := server.ListenAndServe() // always non-nil
+		if err != http.ErrServerClosed {
+			state.Errors <- fmt.Errorf("got error from ws server: %v", err)
+		}
+	}()
 
 	// at the same time, portInfo will be closed and hub.run() will exit
 	<-state.Ctx.Done()
