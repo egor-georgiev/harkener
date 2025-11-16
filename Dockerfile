@@ -1,7 +1,11 @@
-FROM golang:1.23.8-alpine AS builder
+ARG OS=linux
+ARG ARCH=amd64
 
-ARG GOOS=linux
-ARG GOARCH=amd64
+FROM --platform=${OS}/${ARCH} golang:1.23.8-alpine AS builder
+ARG OS
+ARG ARCH
+ARG GOOS=${OS}
+ARG GOARCH=${ARCH}
 ARG CGO_ENABLED=1
 
 WORKDIR /code
@@ -17,11 +21,12 @@ RUN go mod download -x
 COPY main.go .
 COPY cmd cmd
 COPY internal internal
-RUN go build
-RUN go build -o harkener -tags netgo,osusergo -ldflags '-extldflags "-static" -w -s' .
+RUN go build -o harkener-${OS}-${ARCH} -tags netgo,osusergo -ldflags '-extldflags "-static" -w -s' .
 
 FROM scratch AS final
+ARG OS
+ARG ARCH
 
-COPY --from=builder /code/harkener .
+COPY --from=builder /code/harkener-${OS}-${ARCH} .
 ENTRYPOINT ["/harkener"]
 

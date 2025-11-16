@@ -14,7 +14,9 @@ endif
 
 .PHONY: build
 build: ## build the binary
-	@docker build --output=. . $(args)
+	@$(eval os ?= linux)
+	@$(eval arch ?= amd64)
+	@docker build --build-arg ARCH=$(arch) --build-arg OS=$(os) --output=. . $(args)
 
 .PHONY: deploy
 deploy: check-env build ## build the binary and deploy to the server
