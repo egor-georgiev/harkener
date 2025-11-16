@@ -1,7 +1,7 @@
 ARG OS=linux
 ARG ARCH=amd64
 
-FROM --platform=${OS}/${ARCH} golang:1.23.8-alpine AS builder
+FROM --platform=${OS}/${ARCH} golang:1.25.4-alpine AS builder
 ARG OS
 ARG ARCH
 ARG GOOS=${OS}
