@@ -20,7 +20,7 @@ build: ## build the binary
 
 .PHONY: deploy
 deploy: check-env build ## build the binary and deploy to the server
-	@scp harkener $(HARKENER_DEPLOY_HOST):$(HARKENER_DEPLOY_PATH)
+	@scp harkener-linux-amd64 $(HARKENER_DEPLOY_HOST):$(HARKENER_DEPLOY_PATH)
 
 .PHONY: fmt
 fmt: ## reformat
